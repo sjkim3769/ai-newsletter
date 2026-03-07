@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI 기술 뉴스레터</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <!-- 헤더 -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="brand">
+        <span class="brand-icon">🤖</span>
+        <div>
+          <h1 class="brand-title">AI 기술 뉴스레터</h1>
+          <p class="brand-sub">주 2회 발행 · 매주 월·목 오전 9시</p>
+        </div>
+      </div>
+      <nav class="header-nav">
+        <button class="nav-btn active" id="btn-latest" onclick="App.showLatest()">최신호</button>
+        <button class="nav-btn" id="btn-history" onclick="App.showHistory()">발행 이력</button>
+        <button class="nav-btn admin-btn" onclick="App.toggleAdmin()">관리</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- 메인 콘텐츠 -->
+  <main class="container main-content">
+
+    <!-- 최신 뉴스레터 뷰 -->
+    <section id="view-latest">
+      <div id="newsletter-meta" class="newsletter-meta hidden"></div>
+      <div id="newsletter-body" class="newsletter-body">
+        <div class="skeleton-wrapper">
+          <div class="skeleton skeleton-title"></div>
+          <div class="skeleton skeleton-text"></div>
+          <div class="skeleton skeleton-text short"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 이력 뷰 -->
+    <section id="view-history" class="hidden">
+      <h2 class="section-title">발행 이력</h2>
+      <ul id="history-list" class="history-list"></ul>
+    </section>
+
+    <!-- 관리자 패널 -->
+    <section id="view-admin" class="hidden">
+      <div class="admin-panel">
+        <h2>관리자 패널</h2>
+        <p class="admin-desc">수동으로 뉴스레터를 즉시 생성합니다. 약 1-2분 소요됩니다.</p>
+        <div class="admin-form">
+          <input type="password" id="admin-key-input" placeholder="Admin Key 입력" />
+          <button class="btn-primary" onclick="App.generateNow()">지금 생성</button>
+        </div>
+        <p id="admin-msg" class="admin-msg"></p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 챗봇 -->
+  <div id="chatbot" class="chatbot">
+    <button class="chatbot-toggle" onclick="App.toggleChat()" title="AI 어시스턴트">
+      <span id="chat-icon">💬</span>
+    </button>
+    <div id="chat-panel" class="chat-panel hidden">
+      <div class="chat-header">
+        <span>AI 어시스턴트</span>
+        <small>이번 뉴스레터 내용에 대해 질문하세요</small>
+        <button class="chat-close" onclick="App.toggleChat()">✕</button>
+      </div>
+      <div id="chat-messages" class="chat-messages">
+        <div class="chat-bubble assistant">안녕하세요! 이번 뉴스레터에 대해 궁금한 점이 있으시면 질문해주세요.</div>
+      </div>
+      <div class="chat-input-area">
+        <input type="text" id="chat-input" placeholder="질문을 입력하세요..." onkeydown="if(event.key==='Enter') App.sendChat()" />
+        <button onclick="App.sendChat()" class="btn-send">전송</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 알림 -->
+  <div id="toast" class="toast hidden"></div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>AI 기술 뉴스레터 · 원본 기사 출처 링크 제공 · 챗봇은 서버 API 키 사용 (개인 로그인 불필요)</p>
+    </div>
+  </footer>
+
+  <script src="/js/app.js"></script>
+</body>
+</html>

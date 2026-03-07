@@ -1,0 +1,56 @@
+{
+  "server": {
+    "port": 3000
+  },
+  "ai": {
+    "model": "claude-haiku-4-5-20251001",
+    "maxTokens": 4000,
+    "chatMaxTokens": 800
+  },
+  "scheduler": {
+    "cron": "0 9 * * 1,4",
+    "timezone": "Asia/Seoul"
+  },
+  "categories": {
+    "기술": {
+      "label": "기술 트렌드",
+      "emoji": "⚙️",
+      "count": 3,
+      "feeds": [
+        { "name": "TechCrunch", "url": "https://techcrunch.com/feed/" },
+        { "name": "Ars Technica", "url": "https://feeds.arstechnica.com/arstechnica/technology-lab" }
+      ]
+    },
+    "빅테크": {
+      "label": "빅테크 동향",
+      "emoji": "🏢",
+      "count": 3,
+      "feeds": [
+        { "name": "The Verge", "url": "https://www.theverge.com/rss/index.xml" },
+        { "name": "9to5Google", "url": "https://9to5google.com/feed/" }
+      ]
+    },
+    "시장투자": {
+      "label": "시장·투자 동향",
+      "emoji": "📈",
+      "count": 2,
+      "feeds": [
+        { "name": "VentureBeat", "url": "https://venturebeat.com/feed/" },
+        { "name": "TechCrunch Startups", "url": "https://techcrunch.com/category/startups/feed/" }
+      ]
+    },
+    "이슈": {
+      "label": "주요 이슈",
+      "emoji": "🔥",
+      "count": 2,
+      "feeds": [
+        { "name": "Wired", "url": "https://www.wired.com/feed/rss" },
+        { "name": "Engadget", "url": "https://www.engadget.com/rss.xml" }
+      ]
+    }
+  },
+  "rateLimit": {
+    "chatRequestsPerHour": 20,
+    "windowMs": 3600000
+  }
+}

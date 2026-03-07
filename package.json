@@ -1,0 +1,21 @@
+{
+  "name": "ai-newsletter",
+  "version": "1.0.0",
+  "description": "AI 기술 뉴스레터 - 주 2회 자동 발행",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.2",
+    "node-cron": "^3.0.3",
+    "rss-parser": "^3.13.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  }
+}
