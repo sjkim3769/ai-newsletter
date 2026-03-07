@@ -1,0 +1,99 @@
+{
+  "id": "newsletter-2026-03-07-1772924552657",
+  "title": "2026년 3월 AI 기술 뉴스레터",
+  "date": "2026-03-07T23:02:32.657Z",
+  "issue": 1,
+  "categories": {
+    "기술": [
+      {
+        "title": "그램리 정렬 기능의 한계",
+        "source": "TechCrunch",
+        "url": "https://techcrunch.com/2026/03/07/grammarlys-expert-review-is-just-missing-the-actual-experts/",
+        "summary": "그램리 정렬 기능",
+        "insight": "국내 시사점",
+        "publishedAt": "Sat, 07 Mar 2026 22:56:31 +0000"
+      },
+      {
+        "title": "오픈AI 로봇트공학 책임자 사임",
+        "source": "TechCrunch",
+        "url": "https://techcrunch.com/2026/03/07/openai-robotics-lead-caitlin-kalinowski-quits-in-response-to-pentagon-deal/",
+        "summary": "오픈AI 로봇트공학 책임자",
+        "insight": "국내 시사점",
+        "publishedAt": "Sat, 07 Mar 2026 20:44:25 +0000"
+      },
+      {
+        "title": "팝소켓 창립자 이야기",
+        "source": "TechCrunch",
+        "url": "https://techcrunch.com/2026/03/07/popsockets-founder-david-barnett-talks-about-building-a-viral-business/",
+        "summary": "팝소켓 이야기",
+        "insight": "국내 시사점",
+        "publishedAt": "Sat, 07 Mar 2026 18:40:00 +0000"
+      }
+    ],
+    "빅테크": [
+      {
+        "title": "소니 다이내믹 가격 설정",
+        "source": "The Verge",
+        "url": "https://www.theverge.com/games/891085/sony-dynamic-pricing-playstation-games",
+        "summary": "소니 다이내믹 가격",
+        "insight": "국내 시사점",
+        "publishedAt": "2026-03-07T17:52:10.000Z"
+      },
+      {
+        "title": "맥북 기프트 카드 증정",
+        "source": "The Verge",
+        "url": "https://www.theverge.com/gadgets/890788/macbook-neo-air-pro-samsung-galaxy-s26-gift-card-deal-sale",
+        "summary": "맥북 기프트 카드",
+        "insight": "국내 시사점",
+        "publishedAt": "2026-03-07T17:00:00.000Z"
+      },
+      {
+        "title": "비지오 계정 통합",
+        "source": "The Verge",
+        "url": "https://www.theverge.com/gadgets/891056/vizio-accounts-are-becoming-walmart-accounts",
+        "summary": "비지오 계정",
+        "insight": "국내 시사점",
+        "publishedAt": "2026-03-07T15:35:57.000Z"
+      }
+    ],
+    "시장투자": [
+      {
+        "title": "랑체인 CEO의 이야기",
+        "source": "VentureBeat",
+        "url": "https://venturebeat.com/orchestration/langchains-ceo-argues-that-better-models-alone-wont-get-your-ai-agent-to",
+        "summary": "랑체인 CEO 이야기",
+        "insight": "국내 시사점",
+        "publishedAt": "Sat, 07 Mar 2026 22:00:00 GMT"
+      },
+      {
+        "title": "카르파디의 이야기",
+        "source": "VentureBeat",
+        "url": "https://venturebeat.com/technology/karpathys-march-of-nines-shows-why-90-ai-reliability-isnt-even-close-to",
+        "summary": "카르파디 이야기",
+        "insight": "국내 시사점",
+        "publishedAt": "Sat, 07 Mar 2026 05:00:00 GMT"
+      }
+    ],
+    "이슈": [
+      {
+        "title": "오픈AI 어덜트 모드 연기",
+        "source": "Engadget",
+        "url": "https://www.engadget.com/ai/openai-is-reportedly-pushing-back-the-launch-of-its-adult-mode-even-further-213013801.html?src=rss",
+        "summary": "오픈AI 어덜트 모드",
+        "insight": "국내 시사점",
+        "publishedAt": "Sat, 07 Mar 2026 21:30:13 +0000"
+      },
+      {
+        "title": "NASA의 달트 우주선",
+        "source": "Engadget",
+        "url": "https://www.engadget.com/science/space/nasas-dart-spacecraft-changed-a-binary-asteroids-orbit-around-the-sun-in-a-first-for-a-human-made-object-210529924.html?src=rss",
+        "summary": "NASA의 달트 우주선",
+        "insight": "국내 시사점",
+        "publishedAt": "Sat, 07 Mar 2026 21:05:29 +0000"
+      }
+    ]
+  },
+  "generatedAt": "2026-03-07T23:02:32.657Z",
+  "inputTokens": 2591,
+  "outputTokens": 966
+}
