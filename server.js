@@ -50,17 +50,29 @@ app.get('/api/newsletters/:id', (req, res) => {
   res.json(newsletter);
 });
 
+// ── 생성 상태 (폴링용) ──
+let generationState = { running: false, error: null, lastId: null };
+
+app.get('/api/status', (req, res) => {
+  res.json(generationState);
+});
+
 // ── 수동 생성 (Admin Key 필요) ──
 app.post('/api/newsletters/generate', async (req, res) => {
   if (!req.body.adminKey || req.body.adminKey !== process.env.ADMIN_KEY) {
     return res.status(401).json({ error: '관리자 키가 올바르지 않습니다.' });
   }
-  res.json({ message: '뉴스레터 생성을 시작합니다. 약 1-2분 후 완료됩니다.' });
-  try {
-    await generator.generate();
-  } catch (err) {
-    console.error('[수동 생성 오류]', err.message);
+  if (generationState.running) {
+    return res.status(409).json({ error: '이미 생성 중입니다. 잠시 후 다시 시도해주세요.' });
   }
+  generationState = { running: true, error: null, lastId: null };
+  res.json({ message: '뉴스레터 생성을 시작합니다. 잠시 후 자동으로 표시됩니다.' });
+  generator.generate()
+    .then(nl => { generationState = { running: false, error: null, lastId: nl.id }; })
+    .catch(err => {
+      console.error('[수동 생성 오류]', err.message);
+      generationState = { running: false, error: err.message, lastId: null };
+    });
 });
 
 // ── 챗봇 (로그인 불필요, 서버 API 키 사용) ──
