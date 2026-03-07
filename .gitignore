@@ -4,8 +4,11 @@
 # Node 의존성 (npm install로 재설치 가능)
 node_modules/
 
-# 생성된 뉴스레터 데이터 (서버마다 별도 관리)
+# 서버 모드 뉴스레터 데이터 (서버마다 별도 관리)
 data/newsletters.json
+
+# GitHub Pages 정적 데이터는 커밋 대상 (Actions가 생성)
+# public/data/ 는 제외하지 않음
 
 # 로그
 *.log

@@ -1,8 +1,9 @@
-/* AI 뉴스레터 - 프론트엔드 SPA */
+/* AI 뉴스레터 - 프론트엔드 SPA (서버 모드 + 정적 모드 지원) */
 const App = (() => {
   let currentNewsletterId = null;
   let chatOpen = false;
   let pollTimer = null;
+  let IS_STATIC = false; // API 서버 없는 환경 (GitHub Pages 등)
 
   const CAT_META = {
     기술:    { label: '기술 트렌드',    emoji: '⚙️' },
@@ -11,18 +12,57 @@ const App = (() => {
     이슈:    { label: '주요 이슈',      emoji: '🔥' }
   };
 
-  // ── HTML 이스케이프 (XSS 방지) ──
+  // ── HTML 이스케이프 ──
   function esc(str) {
     if (!str) return '';
     return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
-  // ── API 유틸 ──
+  // ── 모드 감지: API 서버 존재 여부 확인 ──
+  async function detectMode() {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 1500);
+      const res = await fetch('/api/health', { signal: ctrl.signal });
+      IS_STATIC = !res.ok;
+    } catch {
+      IS_STATIC = true;
+    }
+    // 정적 모드에서 챗봇·관리자 패널 숨기기
+    if (IS_STATIC) {
+      document.getElementById('chatbot')?.classList.add('hidden');
+      document.querySelector('.admin-btn')?.classList.add('hidden');
+    }
+  }
+
+  // ── 데이터 로딩 (서버/정적 모드 통합) ──
+  async function loadData(path) {
+    const res = await fetch(path);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
+  async function fetchLatest() {
+    return IS_STATIC
+      ? loadData('./data/latest.json')
+      : loadData('/api/newsletters/latest');
+  }
+
+  async function fetchList() {
+    return IS_STATIC
+      ? loadData('./data/index.json')
+      : loadData('/api/newsletters');
+  }
+
+  async function fetchNewsletter(id) {
+    return IS_STATIC
+      ? loadData(`./data/${id}.json`)
+      : loadData(`/api/newsletters/${id}`);
+  }
+
+  // ── API 유틸 (서버 전용) ──
   async function api(path, options = {}) {
     const res = await fetch(path, {
       headers: { 'Content-Type': 'application/json' },
@@ -55,22 +95,19 @@ const App = (() => {
   // ── 뉴스레터 렌더링 ──
   function renderNewsletter(data) {
     currentNewsletterId = data.id;
-
     const meta = document.getElementById('newsletter-meta');
     meta.classList.remove('hidden');
-    // XSS 방지: 제목·날짜 모두 esc() 적용
     meta.innerHTML = `
       <div class="meta-issue">제${esc(String(data.issue))}호</div>
       <h2 class="meta-title">${esc(data.title)}</h2>
       <div class="meta-info">
         발행일: ${formatDate(data.date)}
         ${data.inputTokens ? `<span class="meta-tokens">· AI 토큰 ${data.inputTokens + data.outputTokens}개 사용</span>` : ''}
-      </div>
-    `;
+        ${IS_STATIC ? '<span class="meta-tokens">· GitHub Pages</span>' : ''}
+      </div>`;
 
     const body = document.getElementById('newsletter-body');
-    const categories = data.categories || {};
-    const keys = Object.keys(CAT_META).filter(k => categories[k]?.length);
+    const keys = Object.keys(CAT_META).filter(k => (data.categories || {})[k]?.length);
 
     if (!keys.length) {
       body.innerHTML = emptyState('카테고리 데이터가 없습니다.');
@@ -84,9 +121,9 @@ const App = (() => {
           <div class="category-header">
             <span class="category-emoji">${m.emoji}</span>
             <span class="category-label">${m.label}</span>
-            <span class="category-badge badge-${esc(key)}">${(categories[key] || []).length}건</span>
+            <span class="category-badge badge-${esc(key)}">${(data.categories[key] || []).length}건</span>
           </div>
-          ${(categories[key] || []).map(renderArticle).join('')}
+          ${(data.categories[key] || []).map(renderArticle).join('')}
         </section>`;
     }).join('');
   }
@@ -109,10 +146,7 @@ const App = (() => {
   // ── 이력 렌더링 ──
   function renderHistory(list) {
     const ul = document.getElementById('history-list');
-    if (!list.length) {
-      ul.innerHTML = emptyState('아직 발행된 뉴스레터가 없습니다.');
-      return;
-    }
+    if (!list.length) { ul.innerHTML = emptyState('아직 발행된 뉴스레터가 없습니다.'); return; }
     ul.innerHTML = list.map(item => `
       <li class="history-item" data-id="${esc(item.id)}">
         <div>
@@ -121,20 +155,18 @@ const App = (() => {
         </div>
         <span class="history-item-issue">제${esc(String(item.issue))}호</span>
       </li>`).join('');
-
-    // 이벤트 위임 (XSS 방지: onclick 인라인 제거)
-    ul.querySelectorAll('.history-item').forEach(li => {
-      li.addEventListener('click', () => loadNewsletter(li.dataset.id));
-    });
+    ul.querySelectorAll('.history-item').forEach(li =>
+      li.addEventListener('click', () => loadNewsletter(li.dataset.id))
+    );
   }
 
   function emptyState(msg) {
-    return `<div class="empty-state"><div class="icon">📭</div><p>${esc(msg)}</p></div>`;
+    return `<div class="empty-state"><div class="icon">📭</div><p>${esc(msg)}</p>
+      ${!IS_STATIC ? '<button class="btn-go-admin" onclick="App.toggleAdmin()">관리자 패널에서 생성하기 →</button>' : ''}</div>`;
   }
 
-  // ── 스켈레톤 로딩 ──
-  function showSkeleton(targetId) {
-    document.getElementById(targetId).innerHTML = `
+  function showSkeleton(id) {
+    document.getElementById(id).innerHTML = `
       <div class="skeleton-wrapper">
         <div class="skeleton skeleton-title"></div>
         <div class="skeleton skeleton-text"></div>
@@ -148,14 +180,15 @@ const App = (() => {
     showSkeleton('newsletter-body');
     document.getElementById('newsletter-meta').classList.add('hidden');
     try {
-      const data = await api('/api/newsletters/latest');
-      renderNewsletter(data);
+      renderNewsletter(await fetchLatest());
     } catch {
       document.getElementById('newsletter-body').innerHTML = `
         <div class="empty-state">
           <div class="icon">📭</div>
           <p>아직 발행된 뉴스레터가 없습니다.</p>
-          <button class="btn-go-admin" onclick="App.toggleAdmin()">관리자 패널에서 첫 번째 생성하기 →</button>
+          ${IS_STATIC
+            ? '<p><small>GitHub Actions에서 뉴스레터를 생성하면 자동으로 표시됩니다.</small></p>'
+            : '<button class="btn-go-admin" onclick="App.toggleAdmin()">관리자 패널에서 첫 번째 생성하기 →</button>'}
         </div>`;
     }
   }
@@ -163,20 +196,14 @@ const App = (() => {
   // ── 공개: 이력 ──
   async function showHistory() {
     switchView('history');
-    document.getElementById('history-list').innerHTML = `
-      <div class="skeleton-wrapper">
-        <div class="skeleton skeleton-text"></div>
-        <div class="skeleton skeleton-text short"></div>
-      </div>`;
-    try {
-      renderHistory(await api('/api/newsletters'));
-    } catch (err) {
-      showToast('이력 로딩 실패: ' + err.message);
-    }
+    showSkeleton('history-list');
+    try { renderHistory(await fetchList()); }
+    catch (err) { showToast('이력 로딩 실패: ' + err.message); }
   }
 
-  // ── 공개: 관리자 패널 토글 ──
+  // ── 공개: 관리자 토글 (서버 모드만) ──
   function toggleAdmin() {
+    if (IS_STATIC) return;
     const hidden = document.getElementById('view-admin').classList.contains('hidden');
     switchView(hidden ? 'admin' : 'latest');
   }
@@ -186,29 +213,20 @@ const App = (() => {
     switchView('latest');
     document.getElementById('newsletter-meta').classList.add('hidden');
     showSkeleton('newsletter-body');
-    try {
-      renderNewsletter(await api(`/api/newsletters/${id}`));
-    } catch (err) {
-      showToast('로딩 실패: ' + err.message);
-      showLatest();
-    }
+    try { renderNewsletter(await fetchNewsletter(id)); }
+    catch (err) { showToast('로딩 실패: ' + err.message); showLatest(); }
   }
 
-  // ── 공개: 뉴스레터 생성 ──
+  // ── 공개: 뉴스레터 생성 (서버 모드만) ──
   async function generateNow() {
+    if (IS_STATIC) return;
     const key = document.getElementById('admin-key-input').value.trim();
     if (!key) { showToast('Admin Key를 입력하세요.'); return; }
-
     const btn = document.getElementById('btn-generate');
     const msgEl = document.getElementById('admin-msg');
-
     setGeneratingUI(true, btn, msgEl);
-
     try {
-      await api('/api/newsletters/generate', {
-        method: 'POST',
-        body: JSON.stringify({ adminKey: key })
-      });
+      await api('/api/newsletters/generate', { method: 'POST', body: JSON.stringify({ adminKey: key }) });
       msgEl.innerHTML = '<span class="spinner"></span> RSS 수집 및 AI 요약 생성 중... (약 1-2분)';
       msgEl.className = 'admin-msg info';
       startPolling(btn, msgEl);
@@ -219,39 +237,30 @@ const App = (() => {
     }
   }
 
-  function setGeneratingUI(isGenerating, btn, msgEl) {
-    btn.disabled = isGenerating;
-    btn.innerHTML = isGenerating ? '<span class="spinner"></span> 생성 중...' : '지금 생성';
-    if (!isGenerating) msgEl.textContent = '';
+  function setGeneratingUI(on, btn, msgEl) {
+    btn.disabled = on;
+    btn.innerHTML = on ? '<span class="spinner"></span> 생성 중...' : '지금 생성';
+    if (!on) msgEl.textContent = '';
   }
 
-  // ── 폴링: 생성 완료 감지 ──
   function startPolling(btn, msgEl) {
     clearInterval(pollTimer);
     pollTimer = setInterval(async () => {
       try {
-        const status = await api('/api/status');
-        if (!status.running) {
+        const s = await api('/api/status');
+        if (!s.running) {
           clearInterval(pollTimer);
           setGeneratingUI(false, btn, msgEl);
-          if (status.error) {
-            msgEl.textContent = '생성 실패: ' + status.error;
-            msgEl.className = 'admin-msg error';
-          } else {
-            msgEl.textContent = '생성 완료! 최신호가 업데이트되었습니다.';
-            msgEl.className = 'admin-msg success';
-            showToast('뉴스레터가 새로 발행되었습니다!');
-            setTimeout(() => showLatest(), 1500);
-          }
+          if (s.error) { msgEl.textContent = '생성 실패: ' + s.error; msgEl.className = 'admin-msg error'; }
+          else { msgEl.textContent = '생성 완료!'; msgEl.className = 'admin-msg success'; showToast('뉴스레터가 발행되었습니다!'); setTimeout(() => showLatest(), 1500); }
         }
-      } catch {
-        // 네트워크 오류 시 무시하고 계속 폴링
-      }
+      } catch { /* 네트워크 오류 무시 */ }
     }, 5000);
   }
 
-  // ── 챗봇 ──
+  // ── 챗봇 (서버 모드만) ──
   function toggleChat() {
+    if (IS_STATIC) return;
     chatOpen = !chatOpen;
     document.getElementById('chat-panel').classList.toggle('hidden', !chatOpen);
     document.getElementById('chat-icon').textContent = chatOpen ? '✕' : '💬';
@@ -259,23 +268,19 @@ const App = (() => {
   }
 
   async function sendChat() {
+    if (IS_STATIC) return;
     const input = document.getElementById('chat-input');
     const question = input.value.trim();
     if (!question) return;
     input.value = '';
     input.disabled = true;
-
     appendBubble(question, 'user');
-    const loadingId = appendBubble('', 'assistant loading');
-
+    const lid = appendBubble('', 'assistant loading');
     try {
-      const res = await api('/api/chat', {
-        method: 'POST',
-        body: JSON.stringify({ question, newsletterId: currentNewsletterId })
-      });
-      updateBubble(loadingId, res.answer, 'assistant');
+      const res = await api('/api/chat', { method: 'POST', body: JSON.stringify({ question, newsletterId: currentNewsletterId }) });
+      updateBubble(lid, res.answer, 'assistant');
     } catch (err) {
-      updateBubble(loadingId, '오류: ' + err.message, 'assistant error-bubble');
+      updateBubble(lid, '오류: ' + err.message, 'assistant error-bubble');
     } finally {
       input.disabled = false;
       input.focus();
@@ -283,18 +288,13 @@ const App = (() => {
   }
 
   function appendBubble(text, cls) {
-    const container = document.getElementById('chat-messages');
-    const id = 'bubble-' + Date.now();
-    const div = document.createElement('div');
-    div.id = id;
-    div.className = `chat-bubble ${cls}`;
-    if (cls.includes('loading')) {
-      div.innerHTML = '<span class="dot-pulse"></span>';
-    } else {
-      div.textContent = text;
-    }
-    container.appendChild(div);
-    container.scrollTop = container.scrollHeight;
+    const c = document.getElementById('chat-messages');
+    const id = 'b-' + Date.now();
+    const d = document.createElement('div');
+    d.id = id; d.className = `chat-bubble ${cls}`;
+    d.innerHTML = cls.includes('loading') ? '<span class="dot-pulse"></span>' : '';
+    if (!cls.includes('loading')) d.textContent = text;
+    c.appendChild(d); c.scrollTop = c.scrollHeight;
     return id;
   }
 
@@ -304,20 +304,18 @@ const App = (() => {
     document.getElementById('chat-messages').scrollTop = 9999;
   }
 
-  // ── 토스트 알림 ──
   function showToast(msg) {
     const el = document.getElementById('toast');
-    el.textContent = msg;
-    el.classList.add('show');
+    el.textContent = msg; el.classList.add('show');
     setTimeout(() => el.classList.remove('show'), 3500);
   }
 
   // ── 초기화 ──
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
+    await detectMode();
     showLatest();
-    // 챗봇 Enter 키 바인딩
     document.getElementById('chat-input')
-      .addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) sendChat(); });
+      ?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) sendChat(); });
   });
 
   return { showLatest, showHistory, toggleAdmin, loadNewsletter, generateNow, toggleChat, sendChat };

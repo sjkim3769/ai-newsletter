@@ -8,11 +8,8 @@ function getClient() {
   return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 }
 
-// 뉴스레터 생성 (단일 API 호출로 크레딧 최소화)
-async function generate() {
-  console.log('[뉴스레터] RSS 수집 시작...');
-  const rawData = await fetcher.fetchAll();
-
+// 핵심 생성 로직 (서버/GitHub Actions 공용)
+async function buildNewsletter(rawData, issueNumber) {
   const categoryKeys = Object.keys(config.categories);
   const articlesPerCategory = {};
   let inputBlock = '';
@@ -22,7 +19,6 @@ async function generate() {
     const articles = rawData[key] || [];
     articlesPerCategory[key] = articles;
     if (articles.length === 0) continue;
-
     inputBlock += `\n### 카테고리: ${key} (${cat.label}) - ${cat.count}개 선별\n`;
     articles.forEach((a, i) => {
       inputBlock += `[${i + 1}] 출처: ${a.source}\n제목: ${a.title}\n요약: ${a.description}\nURL: ${a.url}\n\n`;
@@ -71,14 +67,13 @@ ${inputBlock}`;
   const raw = response.content[0].text.trim();
   let parsed;
   try {
-    // JSON 파싱 (혹시 코드블록이 포함된 경우 제거)
     const jsonStr = raw.replace(/^```json?\s*/i, '').replace(/\s*```$/, '').trim();
     parsed = JSON.parse(jsonStr);
   } catch (err) {
     throw new Error(`JSON 파싱 실패: ${err.message}\n원본: ${raw.slice(0, 200)}`);
   }
 
-  // 원본 URL 및 publishedAt 보강 (generator가 URL을 바꿀 경우 방지)
+  // 원본 URL 및 publishedAt 보강
   for (const key of categoryKeys) {
     if (!parsed.categories[key]) continue;
     parsed.categories[key] = parsed.categories[key].map(article => {
@@ -98,15 +93,24 @@ ${inputBlock}`;
     id: `newsletter-${now.toISOString().slice(0, 10)}-${Date.now()}`,
     title: parsed.title,
     date: now.toISOString(),
-    issue: db.listNewsletters().length + 1,
+    issue: issueNumber,
     categories: parsed.categories,
     generatedAt: now.toISOString(),
     inputTokens: response.usage?.input_tokens,
     outputTokens: response.usage?.output_tokens
   };
 
-  db.saveNewsletter(newsletter);
   console.log(`[뉴스레터] 생성 완료 - "${newsletter.title}" (입력: ${newsletter.inputTokens}T, 출력: ${newsletter.outputTokens}T)`);
+  return newsletter;
+}
+
+// 서버 모드: RSS 수집 → 생성 → DB 저장
+async function generate() {
+  console.log('[뉴스레터] RSS 수집 시작...');
+  const rawData = await fetcher.fetchAll();
+  const issue = db.listNewsletters().length + 1;
+  const newsletter = await buildNewsletter(rawData, issue);
+  db.saveNewsletter(newsletter);
   return newsletter;
 }
 
@@ -133,4 +137,4 @@ async function chat(question, newsletter) {
   return response.content[0].text;
 }
 
-module.exports = { generate, chat };
+module.exports = { generate, buildNewsletter, chat };

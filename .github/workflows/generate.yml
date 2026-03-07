@@ -1,0 +1,38 @@
+name: 뉴스레터 자동 생성
+
+on:
+  schedule:
+    - cron: '0 0 * * 1,4'   # 월·목 09:00 KST (= 00:00 UTC)
+  workflow_dispatch:          # GitHub 웹에서 수동 실행 가능
+
+permissions:
+  contents: write             # 생성된 JSON 파일을 커밋하기 위해 필요
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 뉴스레터 생성
+        run: node src/generate-static.js
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: 생성된 데이터 커밋 및 푸시
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'auto: 뉴스레터 자동 발행'
+          file_pattern: 'public/data/**'
+          commit_user_name: 'GitHub Actions Bot'
+          commit_user_email: 'actions@github.com'
