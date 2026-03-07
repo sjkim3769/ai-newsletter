@@ -1,11 +1,11 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Groq = require('groq-sdk');
 const config = require('../config.json');
 const fetcher = require('./fetcher');
 const db = require('./database');
 
 function getClient() {
-  if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY가 설정되지 않았습니다.');
-  return new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  if (!process.env.GROQ_API_KEY) throw new Error('GROQ_API_KEY가 설정되지 않았습니다.');
+  return new Groq({ apiKey: process.env.GROQ_API_KEY });
 }
 
 // 핵심 생성 로직 (서버/GitHub Actions 공용)
@@ -55,19 +55,16 @@ async function buildNewsletter(rawData, issueNumber) {
 수집된 기사:
 ${inputBlock}`;
 
-  console.log('[뉴스레터] Gemini API 호출 중...');
+  console.log('[뉴스레터] Groq API 호출 중...');
   const client = getClient();
-  const model = client.getGenerativeModel({
+  const response = await client.chat.completions.create({
     model: config.ai.model,
-    generationConfig: {
-      responseMimeType: 'application/json',
-      maxOutputTokens: config.ai.maxTokens
-    }
+    max_tokens: config.ai.maxTokens,
+    response_format: { type: 'json_object' },
+    messages: [{ role: 'user', content: prompt }]
   });
 
-  const result = await model.generateContent(prompt);
-  const raw = result.response.text();
-
+  const raw = response.choices[0].message.content;
   let parsed;
   try {
     parsed = JSON.parse(raw);
@@ -90,7 +87,7 @@ ${inputBlock}`;
     });
   }
 
-  const usage = result.response.usageMetadata;
+  const usage = response.usage;
   const now = new Date();
   const newsletter = {
     id: `newsletter-${now.toISOString().slice(0, 10)}-${Date.now()}`,
@@ -99,8 +96,8 @@ ${inputBlock}`;
     issue: issueNumber,
     categories: parsed.categories,
     generatedAt: now.toISOString(),
-    inputTokens: usage?.promptTokenCount,
-    outputTokens: usage?.candidatesTokenCount
+    inputTokens: usage?.prompt_tokens,
+    outputTokens: usage?.completion_tokens
   };
 
   console.log(`[뉴스레터] 생성 완료 - "${newsletter.title}" (입력: ${newsletter.inputTokens}T, 출력: ${newsletter.outputTokens}T)`);
@@ -129,14 +126,19 @@ async function chat(question, newsletter) {
     })
     .join('\n\n');
 
-  const model = client.getGenerativeModel({
-    model: config.ai.model,
-    systemInstruction: `당신은 AI 기술 뉴스레터 어시스턴트입니다. 아래 뉴스레터 내용을 바탕으로 사용자 질문에 한국어로 간결하게 답변하세요. 뉴스레터에 없는 내용은 "이번 뉴스레터에 포함되지 않은 내용입니다"라고 답하세요.\n\n뉴스레터: ${newsletter.title}\n\n${context}`,
-    generationConfig: { maxOutputTokens: config.ai.chatMaxTokens }
+  const response = await client.chat.completions.create({
+    model: config.ai.chatModel || config.ai.model,
+    max_tokens: config.ai.chatMaxTokens,
+    messages: [
+      {
+        role: 'system',
+        content: `당신은 AI 기술 뉴스레터 어시스턴트입니다. 아래 뉴스레터 내용을 바탕으로 사용자 질문에 한국어로 간결하게 답변하세요. 뉴스레터에 없는 내용은 "이번 뉴스레터에 포함되지 않은 내용입니다"라고 답하세요.\n\n뉴스레터: ${newsletter.title}\n\n${context}`
+      },
+      { role: 'user', content: question }
+    ]
   });
 
-  const result = await model.generateContent(question);
-  return result.response.text();
+  return response.choices[0].message.content;
 }
 
 module.exports = { generate, buildNewsletter, chat };

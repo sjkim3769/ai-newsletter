@@ -27,7 +27,7 @@ jobs:
       - name: 뉴스레터 생성
         run: node src/generate-static.js
         env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
 
       - name: 생성된 데이터 커밋 및 푸시
         uses: stefanzweifel/git-auto-commit-action@v5
