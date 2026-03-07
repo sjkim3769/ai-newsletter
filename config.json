@@ -3,7 +3,7 @@
     "port": 3000
   },
   "ai": {
-    "model": "claude-haiku-4-5-20251001",
+    "model": "gemini-1.5-flash",
     "maxTokens": 4000,
     "chatMaxTokens": 800
   },

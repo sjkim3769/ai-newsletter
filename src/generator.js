@@ -1,11 +1,11 @@
-const Anthropic = require('@anthropic-ai/sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const config = require('../config.json');
 const fetcher = require('./fetcher');
 const db = require('./database');
 
 function getClient() {
-  if (!process.env.ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY가 설정되지 않았습니다.');
-  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY가 설정되지 않았습니다.');
+  return new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 }
 
 // 핵심 생성 로직 (서버/GitHub Actions 공용)
@@ -29,7 +29,7 @@ async function buildNewsletter(rawData, issueNumber) {
 
   const prompt = `당신은 AI 기술 뉴스레터 에디터입니다. 아래 RSS에서 수집한 영문 기사들을 한국어 뉴스레터로 변환해주세요.
 
-각 카테고리에서 지정된 수만큼 가장 중요한 기사를 선별하고, 다음 JSON 형식으로만 응답하세요 (마크다운 코드블록 없이 순수 JSON):
+각 카테고리에서 지정된 수만큼 가장 중요한 기사를 선별하고, 다음 JSON 형식으로만 응답하세요:
 
 {
   "title": "뉴스레터 제목 (날짜 포함, 예: 2024년 3월 AI 기술 뉴스레터)",
@@ -51,24 +51,26 @@ async function buildNewsletter(rawData, issueNumber) {
 - summary는 80자 이내
 - insight는 40자 이내
 - URL은 원본 그대로 유지
-- JSON 외 다른 텍스트 출력 금지
 
 수집된 기사:
 ${inputBlock}`;
 
-  console.log('[뉴스레터] Claude API 호출 중...');
+  console.log('[뉴스레터] Gemini API 호출 중...');
   const client = getClient();
-  const response = await client.messages.create({
+  const model = client.getGenerativeModel({
     model: config.ai.model,
-    max_tokens: config.ai.maxTokens,
-    messages: [{ role: 'user', content: prompt }]
+    generationConfig: {
+      responseMimeType: 'application/json',
+      maxOutputTokens: config.ai.maxTokens
+    }
   });
 
-  const raw = response.content[0].text.trim();
+  const result = await model.generateContent(prompt);
+  const raw = result.response.text();
+
   let parsed;
   try {
-    const jsonStr = raw.replace(/^```json?\s*/i, '').replace(/\s*```$/, '').trim();
-    parsed = JSON.parse(jsonStr);
+    parsed = JSON.parse(raw);
   } catch (err) {
     throw new Error(`JSON 파싱 실패: ${err.message}\n원본: ${raw.slice(0, 200)}`);
   }
@@ -88,6 +90,7 @@ ${inputBlock}`;
     });
   }
 
+  const usage = result.response.usageMetadata;
   const now = new Date();
   const newsletter = {
     id: `newsletter-${now.toISOString().slice(0, 10)}-${Date.now()}`,
@@ -96,8 +99,8 @@ ${inputBlock}`;
     issue: issueNumber,
     categories: parsed.categories,
     generatedAt: now.toISOString(),
-    inputTokens: response.usage?.input_tokens,
-    outputTokens: response.usage?.output_tokens
+    inputTokens: usage?.promptTokenCount,
+    outputTokens: usage?.candidatesTokenCount
   };
 
   console.log(`[뉴스레터] 생성 완료 - "${newsletter.title}" (입력: ${newsletter.inputTokens}T, 출력: ${newsletter.outputTokens}T)`);
@@ -114,11 +117,10 @@ async function generate() {
   return newsletter;
 }
 
-// 챗봇 답변 (뉴스레터 컨텍스트 기반, 짧은 토큰 사용)
+// 챗봇 답변 (뉴스레터 컨텍스트 기반)
 async function chat(question, newsletter) {
   const client = getClient();
 
-  // 뉴스레터 내용을 압축하여 컨텍스트 구성
   const context = Object.entries(newsletter.categories || {})
     .map(([key, articles]) => {
       const cat = config.categories[key];
@@ -127,14 +129,14 @@ async function chat(question, newsletter) {
     })
     .join('\n\n');
 
-  const response = await client.messages.create({
+  const model = client.getGenerativeModel({
     model: config.ai.model,
-    max_tokens: config.ai.chatMaxTokens,
-    system: `당신은 AI 기술 뉴스레터 어시스턴트입니다. 아래 뉴스레터 내용을 바탕으로 사용자 질문에 한국어로 간결하게 답변하세요. 뉴스레터에 없는 내용은 "이번 뉴스레터에 포함되지 않은 내용입니다"라고 답하세요.\n\n뉴스레터: ${newsletter.title}\n\n${context}`,
-    messages: [{ role: 'user', content: question }]
+    systemInstruction: `당신은 AI 기술 뉴스레터 어시스턴트입니다. 아래 뉴스레터 내용을 바탕으로 사용자 질문에 한국어로 간결하게 답변하세요. 뉴스레터에 없는 내용은 "이번 뉴스레터에 포함되지 않은 내용입니다"라고 답하세요.\n\n뉴스레터: ${newsletter.title}\n\n${context}`,
+    generationConfig: { maxOutputTokens: config.ai.chatMaxTokens }
   });
 
-  return response.content[0].text;
+  const result = await model.generateContent(question);
+  return result.response.text();
 }
 
 module.exports = { generate, buildNewsletter, chat };
