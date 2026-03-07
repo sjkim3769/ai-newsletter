@@ -19,40 +19,19 @@ async function buildNewsletter(rawData, issueNumber) {
     const articles = rawData[key] || [];
     articlesPerCategory[key] = articles;
     if (articles.length === 0) continue;
-    inputBlock += `\n### 카테고리: ${key} (${cat.label}) - ${cat.count}개 선별\n`;
+    inputBlock += `\n[${key}:${cat.count}건]\n`;
     articles.forEach((a, i) => {
-      inputBlock += `[${i + 1}] 출처: ${a.source}\n제목: ${a.title}\n요약: ${a.description}\nURL: ${a.url}\n\n`;
+      inputBlock += `${i + 1}.${a.source}|${a.title}|${a.description}|${a.url}\n`;
     });
   }
 
   if (!inputBlock.trim()) throw new Error('수집된 기사가 없습니다.');
 
-  const prompt = `당신은 AI 기술 뉴스레터 에디터입니다. 아래 RSS에서 수집한 영문 기사들을 한국어 뉴스레터로 변환해주세요.
+  const prompt = `영문 AI 기사를 한국어 뉴스레터 JSON으로 변환하세요. 각 카테고리([key:N건]) 에서 N개 선별.
 
-각 카테고리에서 지정된 수만큼 가장 중요한 기사를 선별하고, 다음 JSON 형식으로만 응답하세요:
+JSON: {"title":"날짜포함제목","categories":{"key":[{"title":"한글제목","source":"출처","url":"원본URL","summary":"80자이내요약","insight":"40자이내시사점"}]}}
 
-{
-  "title": "뉴스레터 제목 (날짜 포함, 예: 2024년 3월 AI 기술 뉴스레터)",
-  "categories": {
-    "<categoryKey>": [
-      {
-        "title": "한국어 기사 제목",
-        "source": "출처명",
-        "url": "원본 URL (그대로 유지)",
-        "summary": "핵심 내용 2-3문장 한국어 요약",
-        "insight": "국내 시사점 또는 주목 이유 1문장"
-      }
-    ]
-  }
-}
-
-규칙:
-- 각 카테고리 설정 수에 맞춰 선별 (기사가 부족하면 있는 만큼)
-- summary는 80자 이내
-- insight는 40자 이내
-- URL은 원본 그대로 유지
-
-수집된 기사:
+기사(출처|제목|설명|URL):
 ${inputBlock}`;
 
   console.log('[뉴스레터] Groq API 호출 중...');

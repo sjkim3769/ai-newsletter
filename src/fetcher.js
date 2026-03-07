@@ -12,7 +12,7 @@ async function fetchFeed(feed) {
     const data = await parser.parseURL(feed.url);
     return (data.items || []).slice(0, 10).map(item => ({
       title: item.title || '',
-      description: stripHtml(item.contentSnippet || item.content || item.summary || '').slice(0, 300),
+      description: stripHtml(item.contentSnippet || item.content || item.summary || '').slice(0, 100),
       url: item.link || item.guid || '',
       source: feed.name,
       publishedAt: item.pubDate || item.isoDate || new Date().toISOString()
@@ -33,7 +33,7 @@ async function fetchCategory(categoryKey) {
   return merged
     .filter(a => a.url && !seen.has(a.url) && seen.add(a.url))
     .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
-    .slice(0, cat.count * 2); // 넉넉하게 수집 후 generator가 선별
+    .slice(0, cat.count + 1); // count+1개만 전달해 AI 선택 여지 최소 확보
 }
 
 // 전체 카테고리 수집

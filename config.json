@@ -5,8 +5,8 @@
   "ai": {
     "model": "llama-3.3-70b-versatile",
     "chatModel": "llama-3.1-8b-instant",
-    "maxTokens": 4000,
-    "chatMaxTokens": 800
+    "maxTokens": 1500,
+    "chatMaxTokens": 400
   },
   "scheduler": {
     "cron": "0 9 * * 1,4",
