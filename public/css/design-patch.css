@@ -1,0 +1,265 @@
+/* ════════════════════════════════════════════════════
+   AI 기술 뉴스레터 — CSS 디자인 패치
+   
+   적용 방법: 기존 index.html의 <head>에 이 파일을 추가
+   <link rel="stylesheet" href="design-patch.css">
+   
+   또는 기존 <style> 태그 맨 아래에 이 내용을 복사/붙여넣기
+   
+   변경 사항:
+   1. 프리미엄 타이포그래피 (Cormorant Garamond + IBM Plex Mono)
+   2. 앰비언트 배경 효과 (그라디언트 오브)
+   3. 카드 호버 애니메이션
+   4. 색상 체계 개선 (더 깊은 다크 테마)
+   5. 네비게이션 필(pill) 스타일
+   6. 챗봇 UI 개선
+   7. 모바일 반응형 보완
+   ════════════════════════════════════════════════════ */
+
+/* ─── 1. 웹폰트 임포트 ─── */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Cormorant+Garamond:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+/* ─── 2. CSS 변수 오버라이드 ─── */
+:root {
+  --bg-primary: #050508 !important;
+  --bg-secondary: #0A0A10 !important;
+  --bg-card: #111118 !important;
+  --bg-hover: #1A1A24 !important;
+  --text-primary: #EEEEF4 !important;
+  --text-secondary: #B0B0C4 !important;
+  --text-muted: #707088 !important;
+  --accent-1: #FF6B35 !important;
+  --accent-2: #00D4AA !important;
+  --accent-3: #4A9EFF !important;
+  --accent-4: #FFB84D !important;
+  --border-color: #1C1C2C !important;
+  --radius: 14px !important;
+  --gradient: linear-gradient(135deg, #FF6B35 0%, #00D4AA 50%, #4A9EFF 100%) !important;
+}
+
+/* ─── 3. 기본 body ─── */
+body {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  font-family: 'Noto Sans KR', -apple-system, sans-serif !important;
+  -webkit-font-smoothing: antialiased !important;
+}
+
+/* ─── 4. 앰비언트 배경 효과 (body::before로 추가) ─── */
+body::before {
+  content: '';
+  position: fixed;
+  top: -20%;
+  left: -10%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(255,107,53,0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: 0;
+  pointer-events: none;
+  animation: ambientDrift 30s ease-in-out infinite;
+}
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -10%;
+  right: -15%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(0,212,170,0.06) 0%, transparent 70%);
+  border-radius: 50%;
+  z-index: 0;
+  pointer-events: none;
+  animation: ambientDrift 30s ease-in-out infinite reverse;
+}
+@keyframes ambientDrift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, -30px) scale(1.05); }
+}
+
+/* ─── 5. 헤더 개선 ─── */
+header, .header, [class*="header"] {
+  background: rgba(5, 5, 8, 0.88) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 100 !important;
+}
+
+/* ─── 6. 로고 그라디언트 ─── */
+h1, .logo, [class*="logo"] {
+  font-family: 'Cormorant Garamond', serif !important;
+  background: var(--gradient) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+/* ─── 7. 네비게이션 필(pill) 스타일 ─── */
+nav, .nav, [class*="tab"] {
+  display: flex !important;
+  gap: 3px !important;
+}
+
+nav button, .nav button, [class*="tab-btn"], [class*="tab"] button {
+  padding: 7px 18px !important;
+  border: none !important;
+  border-radius: 99px !important;
+  background: transparent !important;
+  color: var(--text-muted) !important;
+  font-family: 'Noto Sans KR', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+nav button:hover, .nav button:hover {
+  color: var(--text-primary) !important;
+  background: var(--bg-hover) !important;
+}
+nav button.active, nav button[class*="active"],
+.nav button.active, [class*="tab"].active {
+  background: var(--text-primary) !important;
+  color: var(--bg-primary) !important;
+}
+
+/* ─── 8. 카드 스타일 ─── */
+.card, [class*="card"], [class*="article"], article {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius) !important;
+  padding: 20px !important;
+  transition: all 0.3s ease !important;
+}
+.card:hover, [class*="card"]:hover, [class*="article"]:hover {
+  border-color: var(--text-muted) !important;
+  transform: translateY(-3px) !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5) !important;
+}
+
+/* ─── 9. 기사 제목 ─── */
+.card h3, [class*="article"] h3, [class*="card-title"] {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  line-height: 1.55 !important;
+  color: var(--text-primary) !important;
+}
+
+/* ─── 10. 기사 요약 ─── */
+.card p, [class*="article"] p, [class*="summary"] {
+  font-size: 13px !important;
+  color: var(--text-secondary) !important;
+  line-height: 1.75 !important;
+}
+
+/* ─── 11. 링크 스타일 ─── */
+a {
+  color: var(--accent-2) !important;
+  text-decoration: none !important;
+  transition: color 0.2s !important;
+}
+a:hover {
+  color: var(--accent-1) !important;
+}
+
+/* ─── 12. 태그 ─── */
+.tag, [class*="tag"], [class*="badge"] {
+  font-size: 10px !important;
+  padding: 3px 10px !important;
+  border-radius: 99px !important;
+  background: rgba(255,255,255,0.04) !important;
+  color: var(--text-muted) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+}
+
+/* ─── 13. 버튼 (생성 버튼 등) ─── */
+button[class*="generate"], button[class*="create"], .btn-primary {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 12px 28px !important;
+  border: none !important;
+  border-radius: 99px !important;
+  background: var(--gradient) !important;
+  color: #fff !important;
+  font-family: 'Noto Sans KR', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+}
+button[class*="generate"]:hover, button[class*="create"]:hover, .btn-primary:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 24px rgba(255,107,53,0.3) !important;
+}
+
+/* ─── 14. 챗봇 FAB 버튼 ─── */
+[class*="chat-toggle"], [class*="chat-fab"], .chat-button {
+  background: var(--gradient) !important;
+  border: none !important;
+  border-radius: 50% !important;
+  box-shadow: 0 8px 28px rgba(255,107,53,0.35) !important;
+  transition: transform 0.2s !important;
+}
+[class*="chat-toggle"]:hover, [class*="chat-fab"]:hover {
+  transform: scale(1.08) !important;
+}
+
+/* ─── 15. 챗봇 패널 ─── */
+[class*="chat-panel"], [class*="chatbot"] {
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6) !important;
+}
+
+/* ─── 16. 푸터 ─── */
+footer, .footer, [class*="footer"] {
+  border-top: 1px solid var(--border-color) !important;
+  background: transparent !important;
+}
+footer p, .footer p {
+  font-size: 11px !important;
+  color: var(--text-muted) !important;
+}
+
+/* ─── 17. 모노스페이스 텍스트 (날짜, 번호 등) ─── */
+[class*="date"], [class*="vol"], [class*="edition"], [class*="mono"], time {
+  font-family: 'IBM Plex Mono', monospace !important;
+}
+
+/* ─── 18. 카테고리 아이콘 영역 ─── */
+[class*="category"] h2, [class*="category"] h3 {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* ─── 19. 스크롤바 커스터마이징 ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ─── 20. 모바일 반응형 보완 ─── */
+@media (max-width: 640px) {
+  body::before, body::after { display: none; }
+  h1, .logo { font-size: 20px !important; }
+  .card, [class*="card"] { padding: 16px !important; }
+}
+
+/* ─── 21. 로딩 애니메이션 ─── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.card, [class*="card"], article {
+  animation: fadeInUp 0.4s ease forwards;
+}
+.card:nth-child(2) { animation-delay: 0.05s; }
+.card:nth-child(3) { animation-delay: 0.1s; }
+.card:nth-child(4) { animation-delay: 0.15s; }
