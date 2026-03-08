@@ -11,13 +11,17 @@ const parser = new Parser({
 async function fetchFeed(feed) {
   try {
     const data = await parser.parseURL(feed.url);
-    return (data.items || []).slice(0, 10).map(item => ({
-      title: item.title || '',
-      description: preprocess(item.contentSnippet || item.content || item.summary || '', 120),
-      url: item.link || item.guid || '',
-      source: feed.name,
-      publishedAt: item.pubDate || item.isoDate || new Date().toISOString()
-    }));
+    return (data.items || [])
+      .slice(0, 10)
+      .filter(item => item.title && (item.link || item.guid)) // 제목·URL 없는 항목 제외
+      .map(item => ({
+        title: item.title.trim(),
+        // content(전체 본문 HTML, 광고 포함 가능)는 제외 — contentSnippet(텍스트만) 또는 summary만 사용
+        description: preprocess(item.contentSnippet || item.summary || '', 120),
+        url: item.link || item.guid,
+        source: feed.name,
+        publishedAt: item.pubDate || item.isoDate || new Date().toISOString()
+      }));
   } catch (err) {
     console.warn(`[RSS 경고] ${feed.name} 피드 실패: ${err.message}`);
     return [];
@@ -34,7 +38,7 @@ async function fetchCategory(categoryKey) {
   return merged
     .filter(a => a.url && !seen.has(a.url) && seen.add(a.url))
     .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
-    .slice(0, cat.count + 1); // count+1개만 전달해 AI 선택 여지 최소 확보
+    .slice(0, config.ai.maxArticlesPerCategory); // 카테고리당 LLM 전달 상한
 }
 
 // 전체 카테고리 수집
