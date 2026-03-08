@@ -102,5 +102,10 @@ app.get('/api/health', (req, res) => {
 const PORT = process.env.PORT || config.server.port;
 app.listen(PORT, () => {
   console.log(`[AI 뉴스레터] 서버 시작 → http://localhost:${PORT}`);
-  scheduler.start();
+  // 개발 모드에서는 스케줄러 비활성화 (NODE_ENV=development 또는 DISABLE_SCHEDULER=true)
+  if (process.env.NODE_ENV === 'development' || process.env.DISABLE_SCHEDULER === 'true') {
+    console.log('[스케줄러] 개발 모드 — 자동 발행 비활성화');
+  } else {
+    scheduler.start();
+  }
 });

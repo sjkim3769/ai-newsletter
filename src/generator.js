@@ -109,24 +109,40 @@ async function buildNewsletter(rawData, issueNumber) {
   return newsletter;
 }
 
-// 서버 모드: RSS 수집 → 생성 → DB 저장
+// 서버 모드: RSS 수집 → 중복 제거 → 생성 → DB 저장
 async function generate() {
   console.log('[뉴스레터] RSS 수집 시작...');
   const rawData = await fetcher.fetchAll();
+
+  // 직전 뉴스레터 기사 URL 수집 (동일 기사 재발행 방지)
+  const latest = db.getLatestNewsletter();
+  const publishedUrls = new Set(
+    Object.values(latest?.categories || {}).flat().map(a => a.url)
+  );
+  if (publishedUrls.size > 0) {
+    for (const key of Object.keys(rawData)) {
+      rawData[key] = rawData[key].filter(a => !publishedUrls.has(a.url));
+    }
+    console.log(`[뉴스레터] 직전호 중복 ${publishedUrls.size}건 URL 제외`);
+  }
+
   const issue = db.listNewsletters().length + 1;
   const newsletter = await buildNewsletter(rawData, issue);
   db.saveNewsletter(newsletter);
   return newsletter;
 }
 
-// 챗봇 답변 (뉴스레터 컨텍스트 기반)
+// 챗봇 답변 (뉴스레터 컨텍스트 기반, 단일 턴 — 히스토리 누적 없음)
 async function chat(question, newsletter) {
   const client = getClient();
 
+  // 컨텍스트: 제목 + 요약 40자 이내로 압축 (토큰 절감)
   const context = Object.entries(newsletter.categories || {})
     .map(([key, articles]) => {
       const cat = config.categories[key];
-      const list = articles.map(a => `- ${a.title}: ${a.summary}`).join('\n');
+      const list = articles
+        .map(a => `- ${a.title}${a.summary ? ': ' + a.summary.slice(0, 40) : ''}`)
+        .join('\n');
       return `[${cat?.label || key}]\n${list}`;
     })
     .join('\n\n');
@@ -137,9 +153,9 @@ async function chat(question, newsletter) {
     messages: [
       {
         role: 'system',
-        content: `당신은 AI 기술 뉴스레터 어시스턴트입니다. 아래 뉴스레터 내용을 바탕으로 사용자 질문에 한국어로 간결하게 답변하세요. 뉴스레터에 없는 내용은 "이번 뉴스레터에 포함되지 않은 내용입니다"라고 답하세요.\n\n뉴스레터: ${newsletter.title}\n\n${context}`
+        content: `뉴스레터 어시스턴트. 아래 내용만 참고해 한국어로 2문장 이내로 답변. 없는 내용은 "이번 뉴스레터에 없는 내용입니다" 답변.\n\n${context}`
       },
-      { role: 'user', content: question }
+      { role: 'user', content: question.slice(0, 200) } // 질문 길이도 제한
     ]
   });
 
