@@ -1,5 +1,6 @@
 const Parser = require('rss-parser');
 const config = require('../config.json');
+const { preprocess } = require('../utils/preprocessor');
 
 const parser = new Parser({
   timeout: 10000,
@@ -12,7 +13,7 @@ async function fetchFeed(feed) {
     const data = await parser.parseURL(feed.url);
     return (data.items || []).slice(0, 10).map(item => ({
       title: item.title || '',
-      description: stripHtml(item.contentSnippet || item.content || item.summary || '').slice(0, 100),
+      description: preprocess(item.contentSnippet || item.content || item.summary || '', 120),
       url: item.link || item.guid || '',
       source: feed.name,
       publishedAt: item.pubDate || item.isoDate || new Date().toISOString()
@@ -46,10 +47,6 @@ async function fetchAll() {
     }))
   );
   return Object.fromEntries(results.map(r => [r.key, r.articles]));
-}
-
-function stripHtml(str) {
-  return str.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 }
 
 module.exports = { fetchAll };

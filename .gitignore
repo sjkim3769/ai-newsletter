@@ -10,6 +10,9 @@ data/newsletters.json
 # GitHub Pages 정적 데이터는 커밋 대상 (Actions가 생성)
 # public/data/ 는 제외하지 않음
 
+# LLM 응답 캐시 (로컬 전용)
+data/cache/
+
 # 로그
 *.log
 npm-debug.log*
