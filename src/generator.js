@@ -51,7 +51,8 @@ async function buildNewsletter(rawData, issueNumber) {
   }
 
   // User 메시지: 기사 데이터만 포함 (역할 설명은 system에서 처리)
-  const userContent = `기사 목록(출처|제목|설명|URL):\n${inputBlock}`;
+  const todayKST = new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const userContent = `오늘 날짜(KST): ${todayKST}\n기사 목록(출처|제목|설명|URL):\n${inputBlock}`;
 
   console.log('[뉴스레터] Groq API 호출 중...');
   const client = getClient();
@@ -96,8 +97,10 @@ async function buildNewsletter(rawData, issueNumber) {
 
   const usage = response.usage;
   const now = new Date();
+  // KST(UTC+9) 기준 날짜 문자열 (YYYY-MM-DD)
+  const kstDateStr = new Date(now.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const newsletter = {
-    id: `newsletter-${now.toISOString().slice(0, 10)}-${Date.now()}`,
+    id: `newsletter-${kstDateStr}-${Date.now()}`,
     title: parsed.title,
     date: now.toISOString(),
     issue: issueNumber,
