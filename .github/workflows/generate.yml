@@ -38,12 +38,14 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
 
       - name: 생성된 데이터 커밋 및 푸시
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: 'auto: 뉴스레터 자동 발행'
-          file_pattern: 'public/data/**'
-          commit_user_name: 'GitHub Actions Bot'
-          commit_user_email: 'actions@github.com'
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add public/data/
+          git diff --cached --quiet && echo "변경 없음" && exit 0
+          git commit -m "auto: 뉴스레터 자동 발행"
+          git pull --rebase origin main
+          git push origin main
 
       - name: Slack 알림
         if: always()
