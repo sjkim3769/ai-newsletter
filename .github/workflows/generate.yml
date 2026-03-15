@@ -36,3 +36,16 @@ jobs:
           file_pattern: 'public/data/**'
           commit_user_name: 'GitHub Actions Bot'
           commit_user_email: 'actions@github.com'
+
+      - name: Slack 알림
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          if [ "$STATUS" = "success" ]; then
+            MSG="✅ 뉴스레터 발행 완료\nhttps://sjkim3769.github.io/ai-newsletter/"
+          else
+            MSG="❌ 뉴스레터 발행 실패 (status: $STATUS)\nhttps://github.com/sjkim3769/ai-newsletter/actions"
+          fi
+          curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"text\": \"$MSG\"}"
