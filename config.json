@@ -49,6 +49,15 @@
         { "name": "Wired", "url": "https://www.wired.com/feed/rss" },
         { "name": "Engadget", "url": "https://www.engadget.com/rss.xml" }
       ]
+    },
+    "국내": {
+      "label": "국내 AI 동향",
+      "emoji": "🇰🇷",
+      "count": 3,
+      "feeds": [
+        { "name": "AI타임스", "url": "https://www.aitimes.com/rss/allArticle.xml" },
+        { "name": "디지털투데이", "url": "https://www.digitaltoday.co.kr/rss/allArticle.xml" }
+      ]
     }
   },
   "rateLimit": {
