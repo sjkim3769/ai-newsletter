@@ -25,6 +25,13 @@ jobs:
       - name: 의존성 설치
         run: npm ci
 
+      - name: LLM 캐시 복원
+        uses: actions/cache@v4
+        with:
+          path: data/cache
+          key: llm-cache-${{ hashFiles('public/data/index.json') }}
+          restore-keys: llm-cache-
+
       - name: 뉴스레터 생성
         run: node src/generate-static.js
         env:
