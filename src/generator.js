@@ -55,15 +55,21 @@ async function buildNewsletter(rawData, issueNumber) {
 
   console.log('[뉴스레터] Groq API 호출 중...');
   const client = getClient();
-  const response = await client.chat.completions.create({
-    model: config.ai.model,
-    max_tokens: config.ai.maxTokens,
-    response_format: { type: 'json_object' },
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: userContent }
-    ]
-  });
+  const TIMEOUT_MS = 60000; // 60초 타임아웃
+  const response = await Promise.race([
+    client.chat.completions.create({
+      model: config.ai.model,
+      max_tokens: config.ai.maxTokens,
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: userContent }
+      ]
+    }),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`Groq API 타임아웃 (${TIMEOUT_MS / 1000}초 초과)`)), TIMEOUT_MS)
+    )
+  ]);
 
   const raw = response.choices[0].message.content;
   let parsed;
