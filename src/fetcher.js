@@ -7,10 +7,17 @@ const parser = new Parser({
   headers: { 'User-Agent': 'AI-Newsletter-Bot/1.0' }
 });
 
-// 단일 피드 가져오기 (실패 시 빈 배열 반환)
+const FEED_TIMEOUT_MS = 30000; // 30초 초과 시 해당 피드 스킵
+
+// 단일 피드 가져오기 (실패 또는 30초 초과 시 빈 배열 반환)
 async function fetchFeed(feed) {
   try {
-    const data = await parser.parseURL(feed.url);
+    const data = await Promise.race([
+      parser.parseURL(feed.url),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`타임아웃 (${FEED_TIMEOUT_MS / 1000}초 초과)`)), FEED_TIMEOUT_MS)
+      )
+    ]);
     return (data.items || [])
       .slice(0, 10)
       .filter(item => item.title && (item.link || item.guid)) // 제목·URL 없는 항목 제외
@@ -23,7 +30,7 @@ async function fetchFeed(feed) {
         publishedAt: item.pubDate || item.isoDate || new Date().toISOString()
       }));
   } catch (err) {
-    console.warn(`[RSS 경고] ${feed.name} 피드 실패: ${err.message}`);
+    console.warn(`[RSS 경고] ${feed.name} 피드 스킵: ${err.message}`);
     return [];
   }
 }
