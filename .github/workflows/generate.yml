@@ -1,8 +1,6 @@
 name: 뉴스레터 자동 생성
 
 on:
-  schedule:
-    - cron: '0 0 * * 1,4'   # 월·목 09:00 KST (= 00:00 UTC)
   workflow_dispatch:          # GitHub 웹에서 수동 실행 가능
 
 permissions:
